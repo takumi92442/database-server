@@ -156,3 +156,18 @@ def post_task_list():
         app.logger.error(f"An error occurred: {e}")
         connection.rollback()  # トランザクションのロールバック
         return jsonify({'message': 'error'})
+    
+
+@app.route('/task_list', methods=['POST'])
+def delete_task(id):
+    try:
+        sql = '''
+        DELETE FROM task_list WHERE ID = %(id)s
+        '''
+        connection.execute(sql, {'id': id})
+    except Exception:
+        connection.rollback()
+    else:
+        connection.commit()
+
+    return jsonify({'message': 'created'})
