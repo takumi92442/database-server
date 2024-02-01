@@ -103,23 +103,26 @@ def delete_todo_list(ID):
 #         return jsonify({'message': 'error'})
 
 
-@app.route('/task_list', methods=['GET'])
-def get_task_list():
-
-    sql = '''
-    SELECT * FROM task_list;
-    '''
-    result = connection.execute(sql)
-    task_list = []
-    for row in result:
-        task = {
-            'ID' :row[0],
-            'LoginId': row[1],
-            'Task':row[2],
-            'LimitDate':row[3]
-        }
-        task_list.append(task)
-    return jsonify(task_list)
+@app.route('/task_list/<string:LoginID>', methods=['GET'])
+def get_task_list(LoginID):
+    try:
+        sql = '''
+        SELECT * FROM task_list WHERE LoginID = %(LoginID)s ORDER BY LimitDate;
+        '''
+        result = connection.execute(sql, {'LoginID': LoginID})
+        task_list = []
+        for row in result:
+            task = {
+                'ID': row[0],
+                'LoginId': row[1],
+                'Task': row[2],
+                'LimitDate': row[3]
+            }
+            task_list.append(task)
+        return jsonify(task_list)
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return jsonify({'message': 'error'})
 
 
 
@@ -138,7 +141,6 @@ def post_task_list():
         new_key += 1
 
     content = request.get_json()
-    print(content)
 
     try:
         sql = '''
@@ -158,16 +160,16 @@ def post_task_list():
         return jsonify({'message': 'error'})
     
 
-@app.route('/task_list', methods=['POST'])
-def delete_task(id):
+@app.route('/task_list/<int:id>', methods=['DELETE'])
+def delete_task_list(id):
     try:
         sql = '''
         DELETE FROM task_list WHERE ID = %(id)s
         '''
         connection.execute(sql, {'id': id})
-    except Exception:
-        connection.rollback()
-    else:
         connection.commit()
-
-    return jsonify({'message': 'created'})
+        return jsonify({'message': 'deleted'})
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        connection.rollback()
+        return jsonify({'message': 'error'})
