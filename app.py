@@ -2,18 +2,6 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import psycopg
 
-# app.config['JSON_AS_ASCII'] = False
-# cors = CORS(app)
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-# connection = psycopg.connect(
-#     host='localhost',
-#     dbname='todo',
-#     user='postgres',
-#     password='password',
-# )
-
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 cors = CORS(app)
@@ -27,29 +15,34 @@ connection = psycopg.connect(
     password='password',
 )
 
-@app.route('/todo-lists', methods=['POST'])
-def post_todo_list():
+@app.route('/login', methods=['GET'])
+def get_Login():
     sql = '''
-    SELECT ID
-    FROM login;
+    SELECT * FROM login;
     '''
     result = connection.execute(sql)
-    key = [row[0] for row in result]
-    
-    new_key = 1
-    while new_key in key:
-        new_key += 1
+    login_list = []
+    for row in result:
+        login = {
+            'LoginID' :row[0],
+            'Password': row[1]
+        }
+        login_list.append(login)
+    return jsonify(login_list)
+
+
+@app.route('/login', methods=['POST'])
+def post_Login():
 
     content = request.get_json()
 
     try:
         sql = '''
-        INSERT INTO login (ID, loginID, password)
+        INSERT INTO login (loginID, password)
         VALUES
-        (%(ID)s, %(LoginID)s, %(Password)s);
+        (%(LoginID)s, %(Password)s);
         '''
-    # (%(ID)s, %(LoginID)s, %(Password)s);
-        connection.execute(sql, {'ID': new_key, 'LoginID': content["LoginID"], 'Password': content["Password"]})
+        connection.execute(sql, {'LoginID': content["LoginID"], 'Password': content["Password"]})
         connection.commit()  # トランザクションをコミット
 
         return jsonify({'message': 'created'})
@@ -58,60 +51,6 @@ def post_todo_list():
         app.logger.error(f"An error occurred: {e}")
         connection.rollback()  # トランザクションのロールバック
         return jsonify({'message': 'error'})
-
-
-
-# @app.route('/todo-lists', methods=['GET'])
-# def get_todo_lists():
-#     sql = '''
-#     SELECT * FROM login;
-#     '''
-#     result = connection.execute(sql)
-#     todo_lists = []
-#     for row in result:
-#         todo_list = {
-#             'ID': row[0],
-#             'LoginID' :row[1],
-#             'Password': row[2]
-#         }
-#         todo_lists.append(todo_list)
-#     return jsonify(todo_lists)
-
-
-# @app.route('/todo-lists', methods=['POST'])
-# def post_todo_list():
-
-#     sql = '''
-#     SELECT ID
-#     FROM login;
-#     '''
-#     result = connection.execute(sql)
-#     key = []
-#     for row in result:
-#         key.append(row[0])
-#     new_key = 1
-#     while True:
-#         if new_key not in key:
-#             break
-#         new_key += 1
-#     content = request.get_json()
-
-#     try:
-#         sql = '''
-#         INSERT INTO login (ID, loginID, password)
-#         VALUES
-#         (%(ID)s, %(loginID)s, %(Password)s);
-#         '''
-
-#         connection.execute(sql, {'ID': new_key, 'LoginID': content["LoginID"], 'Password': content["Password"]})
-
-#     except Exception:
-#         connection.rollback()
-#     else:
-#         connection.commit()
-
-#     return jsonify({'message': 'created'})
-
 
 
 
@@ -129,7 +68,91 @@ def delete_todo_list(ID):
 
     return jsonify({'message': 'created'})
 
-@app.route('/logs')
-def get_logs():
-    log_path = 'app.log'  # 実際のファイルパスに変更すること
-    return send_file(log_path)
+
+
+
+# @app.route('/login', methods=['POST'])
+# def post_login():
+#     sql = '''
+#     SELECT ID
+#     FROM login;
+#     '''
+#     result = connection.execute(sql)
+#     key = [row[0] for row in result]
+    
+#     new_key = 1
+#     while new_key in key:
+#         new_key += 1
+
+#     content = request.get_json()
+
+#     try:
+#         sql = '''
+#         INSERT INTO login (ID, loginID, password)
+#         VALUES
+#         (%(ID)s, %(LoginID)s, %(Password)s);
+#         '''
+#         connection.execute(sql, {'ID': new_key, 'LoginID': content["LoginID"], 'Password': content["Password"]})
+#         connection.commit()  # トランザクションをコミット
+
+#         return jsonify({'message': 'created'})
+    
+#     except Exception as e:
+#         app.logger.error(f"An error occurred: {e}")
+#         connection.rollback()  # トランザクションのロールバック
+#         return jsonify({'message': 'error'})
+
+
+@app.route('/task_list', methods=['GET'])
+def get_task_list():
+
+    sql = '''
+    SELECT * FROM task_list;
+    '''
+    result = connection.execute(sql)
+    task_list = []
+    for row in result:
+        task = {
+            'ID' :row[0],
+            'LoginId': row[1],
+            'Task':row[2],
+            'LimitDate':row[3]
+        }
+        task_list.append(task)
+    return jsonify(task_list)
+
+
+
+
+@app.route('/task_list', methods=['POST'])
+def post_task_list():
+    sql = '''
+    SELECT ID
+    FROM task_list;
+    '''
+    result = connection.execute(sql)
+    key = [row[0] for row in result]
+    
+    new_key = 1
+    while new_key in key:
+        new_key += 1
+
+    content = request.get_json()
+    print(content)
+
+    try:
+        sql = '''
+        INSERT INTO task_list (ID, LoginID, Task, LimitDate)
+        VALUES (%(ID)s, %(LoginID)s, %(Task)s, %(LimitDate)s);
+        '''
+
+        connection.execute(sql, {'ID':new_key,'LoginID': content["LoginID"], 'Task':content["Task"], "LimitDate" :content["LimitDate"]})
+        connection.commit()  # トランザクションをコミット
+
+
+        return jsonify({'message': 'created'})
+    
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        connection.rollback()  # トランザクションのロールバック
+        return jsonify({'message': 'error'})
